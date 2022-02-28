@@ -1,6 +1,7 @@
 package com.edusoft.eduSSH;
 import com.jcraft.jsch.*;
 
+import java.io.ByteArrayOutputStream;
 import java.util.Scanner;
 
 public class Main {
@@ -28,8 +29,41 @@ public class Main {
             session.connect();
 
             System.out.println("Conexión a la máquina correcta!!");
-        }catch(Exception e){
-            e.printStackTrace();
+
+            System.out.printf("Introduce el nombre del archivo que desea ver:");
+            String file = scanner.nextLine();
+
+            channel = (ChannelExec) session.openChannel("exec");
+            channel.setCommand("cat /var/log/" + file);
+
+            ByteArrayOutputStream response = new ByteArrayOutputStream();
+            channel.setOutputStream(response);
+            channel.connect();
+
+            while(channel.isConnected()) {
+                Thread.sleep(100);
+            }
+
+            String responseString = new String(response.toByteArray());
+            if(responseString.isEmpty()) {
+                System.out.println("El archivo que ha especificado está vacío o no existe,se termina el programa.");
+                return;
+            }else{
+                System.out.println(responseString);
+            }
+        }catch(JSchException | InterruptedException e){
+            if(e.getMessage().equals("Auth fail")){
+                System.out.println("Se ha introducido un usuario o contraseña incorrecta");
+            }else{
+                e.printStackTrace();
+            }
+        }finally{
+            if(session != null){
+                session.disconnect();
+            }
+            if(channel != null){
+                channel.disconnect();
+            }
         }
     }
 }
